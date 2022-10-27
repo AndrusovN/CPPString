@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-Wall -Wextra -Wpedantic -Werror
+CFLAGS=-Wall -Wextra -Wpedantic -Werror -lgtest -pthread
 SOURCES=main.cpp
 OUTPUT=main
 
