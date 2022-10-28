@@ -1,11 +1,14 @@
 #include <algorithm>
 #include <assert.h>
+#include <cctype>
 #include <cstring>
 #include <iostream>
 
 class BaseException {
   public:
     virtual void printError() const = 0;
+
+    virtual ~BaseException() {}
 };
 
 class IndexOutOfRangeException : public BaseException {
@@ -35,12 +38,8 @@ class EmptyStringCallException : public BaseException {
         }
 };
 
-bool is_separating_character(char c) {
-    return (c == '\n') ||
-        (c == '\r') ||
-        (c == '\0') ||
-        (c == ' ');
-}
+const char TERMINATE_SYMBOL = '\0';
+
 
 class String {
   private:
@@ -62,7 +61,7 @@ class String {
 
     String();
 
-    String(size_t size, char value='\0');
+    String(size_t size, char value=TERMINATE_SYMBOL);
 
     //to prevent calls like String('A'), which will be interpreted as String(65, '\0');
     String(char) = delete;
@@ -73,12 +72,12 @@ class String {
 
     String& operator = (const String& source);
 
-    String& operator = (const char* source);
-
     String& operator += (const String& other);
 
     String& operator += (char c);
 
+    // Be careful - there're no checks for index correctness
+    // To use memory-safe method check String::at
     char& operator [] (size_t index);
 
     char operator [] (size_t index) const;
@@ -89,6 +88,9 @@ class String {
 
     size_t length() const;
 
+    // I think, it's better to remove this method 
+    // because of encapsulation violation
+    // But it is stated in the task description
     char* data();
 
     const char* data() const;
@@ -114,7 +116,7 @@ class String {
     size_t rfind(const String& substring) const;
 
     String substr(size_t from, size_t count) const;
-    
+
     bool empty() const;
 
     void clear();
@@ -124,11 +126,16 @@ class String {
     ~String();
 };
 
+/* The general idea: if invalid argument is passed to a public method
+ * it generates an exception (except for operator [])
+ * If invalid argument is passed to a private method
+ * it fails the program
+ * */
 void String::resize_buffer(size_t new_buffer_size) {
     assert(new_buffer_size > data_size);
 
     char* new_buffer = new char[new_buffer_size];
-    std::fill(new_buffer, new_buffer + new_buffer_size, '\0');
+    std::fill(new_buffer, new_buffer + new_buffer_size, TERMINATE_SYMBOL);
     std::copy(buffer, buffer + data_size, new_buffer);
     
     delete[] buffer;
@@ -165,7 +172,7 @@ void String::swap(String& other) {
     std::swap(data_size, other.data_size);
 }
 
-String::String(): String(0, '\0') {}
+String::String(): String(0, TERMINATE_SYMBOL) {}
 
 String::String(size_t size, char value) 
         : data_size(size)
@@ -173,7 +180,7 @@ String::String(size_t size, char value)
         , buffer(new char[buffer_size]) {
     
     std::fill(buffer, buffer + data_size, value);
-    buffer[data_size] = '\0';
+    buffer[data_size] = TERMINATE_SYMBOL;
 }
 
 String::String(const char* source) 
@@ -182,7 +189,7 @@ String::String(const char* source)
         , buffer(new char[buffer_size]) {
     
     std::copy(source, source + data_size, buffer);
-    buffer[data_size] = '\0';
+    buffer[data_size] = TERMINATE_SYMBOL;
 }
 
 String::String(const String& source)
@@ -202,13 +209,6 @@ String& String::operator = (const String& source) {
     return *this;
 }
 
-String& String::operator = (const char* source) {
-    String temp(source);
-    swap(temp);
-
-    return *this;
-}
-
 String& String::operator += (const String& other) {
     size_t new_size = size() + other.size();
     // to have O(1) amortized complexity we have to increase 
@@ -216,7 +216,7 @@ String& String::operator += (const String& other) {
     new_size = std::max(new_size, data_size * 2);
 
     if (new_size > capacity()) {
-        // one more byte for \0 at the end
+        // one more byte for terminate character at the end
         resize_buffer(new_size + 1);
     }
 
@@ -238,7 +238,7 @@ String& String::operator += (char c) {
     }
     buffer[data_size] = c;
     ++data_size;
-    buffer[data_size] = '\0';
+    buffer[data_size] = TERMINATE_SYMBOL;
 
     return *this;
 }
@@ -290,7 +290,7 @@ bool operator <= (const String& left, const String& right) {
 }
 
 bool operator >= (const String& left, const String& right) {
-    return !(left < right);
+    return right <= left;
 }
 
 char& String::operator [] (size_t index) {
@@ -329,6 +329,7 @@ size_t String::size() const {
 }
 
 size_t String::capacity() const {
+    // last byte is terminate symbol
     return buffer_size - 1;
 }
 
@@ -339,7 +340,7 @@ void String::push_back(char c) {
 void String::pop_back() {
     exception_if_empty_string();
     data_size--;
-    buffer[data_size] = '\0';
+    buffer[data_size] = TERMINATE_SYMBOL;
 }
 
 char String::front() const {
@@ -384,9 +385,11 @@ String String::substr(size_t from, size_t count) const {
     if (count == 0) return String(); 
     exception_if_wrong_index(from);
     exception_if_wrong_index(from + count - 1);
+
+    // if received negative argument casted to index_t
     if (from + count < from) throw new IndexOutOfRangeException(size() - from, count);
     
-    String result(count, '\0');
+    String result(count, TERMINATE_SYMBOL);
     std::copy(buffer + from, buffer + from + count, result.buffer);
     return result;
 }
@@ -396,7 +399,7 @@ bool String::empty() const {
 }
 
 void String::clear() {
-    std::fill(buffer, buffer + data_size, '\0');
+    buffer[0] = TERMINATE_SYMBOL;
     data_size = 0;
 }
 
@@ -415,8 +418,8 @@ std::istream& operator >> (std::istream& in, String& data) {
     data.clear();
     
     char input;
-    while(in.get(input)) {
-        if (is_separating_character(input)) break;
+    while(!in.eof() && in.get(input)) {
+        if (std::isspace(input)) break;
         data += input;
     }
     return in;
