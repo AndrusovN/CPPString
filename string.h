@@ -381,15 +381,18 @@ size_t String::rfind(const String& substring) const {
     return size();
 }
 
-String String::substr(size_t from, size_t count) const {
-    if (count == 0) return String(); 
-    exception_if_wrong_index(from);
-    exception_if_wrong_index(from + count - 1);
-
+String String::substr(size_t from, size_t count) const { 
     // if received negative argument casted to index_t
     if (from + count < from) throw new IndexOutOfRangeException(size() - from, count);
     
     String result(count, TERMINATE_SYMBOL);
+    if (count == 0) {
+        return result; 
+    }
+
+    exception_if_wrong_index(from);
+    exception_if_wrong_index(from + count - 1);
+    
     std::copy(buffer + from, buffer + from + count, result.buffer);
     return result;
 }

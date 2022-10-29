@@ -1,7 +1,17 @@
 #include <iostream>
 #include <gtest/gtest.h>
+#include <new>
 #include <string>
 #include "string.h"
+
+int new_count = 0;
+
+void* operator new[](size_t size) {
+    ++new_count;
+    void* p = malloc(size);
+    if (p == nullptr) throw std::bad_alloc();
+    return p;
+}
 
 void check_last_symbol(const String& s) {
     ASSERT_EQ('\0', s.data()[s.size()]);
@@ -510,8 +520,10 @@ TEST(MethodTests, RFindEmpty) {
 
 TEST(MethodTests, Substr) {
     String s = "test";
-    
+   
+    new_count = 0; 
     auto result = s.substr(1, 2);
+    ASSERT_EQ(1, new_count);
     ASSERT_EQ("es", result);
     check_last_symbol(result);
 }
@@ -519,7 +531,9 @@ TEST(MethodTests, Substr) {
 TEST(MethodTests, SubstrEmpty) {
     String s = "test";
 
+    new_count = 0;
     auto result = s.substr(1, 0);
+    ASSERT_EQ(1, new_count);
     ASSERT_EQ(String(), result);
     check_last_symbol(result);
 }
@@ -535,7 +549,9 @@ TEST(MethodTests, SubstrEmptyOnEmpty) {
 
     ASSERT_NO_THROW(s.substr(0, 0));
     
+    new_count = 0;
     auto result = s.substr(0, 0);
+    ASSERT_EQ(1, new_count);
     ASSERT_EQ(String(), result);
     check_last_symbol(result);
 }
