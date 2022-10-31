@@ -80,11 +80,11 @@ class String {
     // To use memory-safe method check String::at
     char& operator [] (size_t index);
 
-    char operator [] (size_t index) const;
+    const char& operator [] (size_t index) const;
 
     char& at(size_t index);
 
-    char at(size_t index) const;
+    const char& at(size_t index) const;
 
     size_t length() const;
 
@@ -105,11 +105,11 @@ class String {
 
     char& front();
 
-    char front() const;
+    const char& front() const;
 
     char& back();
 
-    char back() const;
+    const char& back() const;
 
     size_t find(const String& substring) const;
 
@@ -298,7 +298,7 @@ char& String::operator [] (size_t index) {
 }
 
 // don't ban me please... it's not copypaste imho))
-char String::operator [] (size_t index) const {
+const char& String::operator [] (size_t index) const {
     return buffer[index];
 }
 
@@ -307,7 +307,7 @@ char& String::at(size_t index) {
     return buffer[index];
 }
 
-char String::at(size_t index) const {
+const char& String::at(size_t index) const {
     exception_if_wrong_index(index);
     return buffer[index];
 }
@@ -343,7 +343,7 @@ void String::pop_back() {
     buffer[data_size] = TERMINATE_SYMBOL;
 }
 
-char String::front() const {
+const char& String::front() const {
     return (*this).at(0);
 }
 
@@ -351,7 +351,7 @@ char& String::front() {
     return (*this).at(0);
 }
 
-char String::back() const {
+const char& String::back() const {
     return (*this).at(size() - 1);
 }
 
@@ -382,14 +382,14 @@ size_t String::rfind(const String& substring) const {
 }
 
 String String::substr(size_t from, size_t count) const { 
-    // if received negative argument casted to index_t
+    // if received negative argument casted to size_t
     if (from + count < from) throw new IndexOutOfRangeException(size() - from, count);
-    
-    String result(count, TERMINATE_SYMBOL);
+
+    String result(count, TERMINATE_SYMBOL);   
     if (count == 0) {
         return result; 
     }
-
+   
     exception_if_wrong_index(from);
     exception_if_wrong_index(from + count - 1);
     
@@ -411,9 +411,7 @@ void String::shrink_to_fit() {
 }
 
 std::ostream& operator << (std::ostream& out, const String& data) {
-    for(size_t i = 0; i < data.size(); ++i) {
-        out << data[i];
-    }
+    out << data.data();
     return out;
 }
 

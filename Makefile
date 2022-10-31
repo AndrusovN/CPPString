@@ -5,6 +5,7 @@ OUTPUT=main
 SOURCES=$(OUTPUT).cpp
 COVERAGE_FOLDER=coverage_report
 COVERAGE_REPORT_MAINPAGE=index.html
+OUTPUT_STREAM=/dev/null
 
 build: clean $(SOURCES)
 	$(CC) $(SOURCES) $(CFLAGS) $(TESTFLAGS) -o $(OUTPUT).o
@@ -18,8 +19,7 @@ clean:
 
 test: build $(SOURCES)
 	./$(OUTPUT).o
-	echo "Testing finished"
-	lcov -t $(OUTPUT) -o $(OUTPUT).info -c -d .
-	genhtml -o $(COVERAGE_FOLDER) $(OUTPUT).info
-	xdg-open $(COVERAGE_FOLDER)/$(COVERAGE_REPORT_MAINPAGE)
+	lcov -t $(OUTPUT) -o $(OUTPUT).info -c -d . >> $(OUTPUT_STREAM)
+	genhtml -o $(COVERAGE_FOLDER) $(OUTPUT).info >> $(OUTPUT_STREAM)
+	xdg-open $(COVERAGE_FOLDER)/$(COVERAGE_REPORT_MAINPAGE) >> $(OUTPUT_STREAM)
 
