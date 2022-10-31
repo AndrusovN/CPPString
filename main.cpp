@@ -189,32 +189,6 @@ TEST(OperatorTests, BracketsNonConstValue) {
     }
 }
 
-TEST(OperatorTests, AtConstExceptionBelowZero) {
-    const String s = "abcd";
-
-    ASSERT_THROW(s.at(-1), IndexOutOfRangeException*);
-}
-
-TEST(OperatorTests, AtConstExceptionAboveSize) {
-    const String s = "abcd";
-
-    ASSERT_THROW(s.at(4), IndexOutOfRangeException*);
-    ASSERT_THROW(s.at(1791791791), IndexOutOfRangeException*);
-}
-
-TEST(OperatorTests, AtNonConstExceptionBelowZero) {
-    String s = "abcd";
-
-    ASSERT_THROW(s.at(-1), IndexOutOfRangeException*);
-}
-
-TEST(OperatorTests, AtNonConstExceptionAboveSize) {
-    String s = "abcd";
-
-    ASSERT_THROW(s.at(4), IndexOutOfRangeException*);
-    ASSERT_THROW(s.at(1791791791), IndexOutOfRangeException*);
-}
-
 TEST(OperatorTests, PlusEqTwoNotEmpty) {
     String s1 = "ab", s2 = "oba";
     s1 += s2;
@@ -388,21 +362,10 @@ TEST(MethodTests, PopBack) {
     check_last_symbol(s);
 }
 
-TEST(MethodTests, PopBackEmpty) {
-    String s;
-    ASSERT_THROW(s.pop_back(), EmptyStringCallException*);
-}
-
 TEST(MethodTests, FrontConst) {
     const String s = "cringe";
 
     ASSERT_EQ('c', s.front());
-}
-
-TEST(MethodTests, FrontConstEmpty) {
-    const String s;
-
-    ASSERT_ANY_THROW(s.front());
 }
 
 TEST(MethodTests, Front) {
@@ -418,12 +381,6 @@ TEST(MethodTests, FrontChange) {
     ASSERT_EQ("cringe", s);
 }
 
-TEST(MethodTests, FrontEmpty) {
-    String s;
-
-    ASSERT_ANY_THROW(s.front());
-}
-
 TEST(MethodTests, BackConst) {
     const String s = "cringe";
 
@@ -431,23 +388,11 @@ TEST(MethodTests, BackConst) {
     check_last_symbol(s);
 }
 
-TEST(MethodTests, BackConstEmpty) {
-    const String s;
-
-    ASSERT_ANY_THROW(s.back());
-}
-
 TEST(MethodTests, Back) {
     String s = "cringe";
 
     ASSERT_EQ('e', s.back());
     check_last_symbol(s);
-}
-
-TEST(MethodTests, BackEmpty) {
-    String s;
-
-    ASSERT_ANY_THROW(s.back());
 }
 
 TEST(MethodTests, BackChange) {
@@ -538,12 +483,6 @@ TEST(MethodTests, SubstrEmpty) {
     check_last_symbol(result);
 }
 
-TEST(MethodTests, SubstrOnEmpty) {
-    String s;
-
-    ASSERT_ANY_THROW(s.substr(0, 1));
-}
-
 TEST(MethodTests, SubstrEmptyOnEmpty) {
     String s;
 
@@ -560,24 +499,6 @@ TEST(MethodTests, SubstrEmptyOnEmptyNotZero) {
     String s;
 
     ASSERT_NO_THROW(s.substr(1, 0));
-}
-
-TEST(MethodTests, SubstrNegative) {
-    String s = "test";
-
-    ASSERT_ANY_THROW(s.substr(2, -1));
-}
-
-TEST(MethodTests, SubstrTooLong) {
-    String s = "test";
-
-    ASSERT_THROW(s.substr(1, 4), IndexOutOfRangeException*);
-}
-
-TEST(MethodTests, SubstrFromNegative) {
-    String s = "test";
-
-    ASSERT_THROW(s.substr(-1, 2), IndexOutOfRangeException*);
 }
 
 TEST(MethodTests, EmptyFalse) {
@@ -731,37 +652,6 @@ std::streambuf* move_cerr_to_other_stringstream(std::stringstream& other) {
     std::streambuf* old = std::cerr.rdbuf();
     std::cerr.rdbuf(other.rdbuf());
     return old;
-}
-
-TEST(ExceptionTests, IndexOutOfRangePrint) {
-    try {
-        throw new IndexOutOfRangeException(10, 5);
-    } catch(IndexOutOfRangeException* e) {
-        std::stringstream buffer;
-        auto oldbuf = move_cerr_to_other_stringstream(buffer);
-
-        e->printError();
-        std::string error(std::istreambuf_iterator<char>(buffer), {});
-
-        std::cerr.rdbuf(oldbuf);
-
-        ASSERT_EQ("Index out of range exception! Index should be in [0; 5), but 10 is given\n", error);
-    }
-}
-
-TEST(ExceptionTests, EmptyStringCallPrint) {
-    try {
-        throw new EmptyStringCallException();
-    } catch(EmptyStringCallException* e) {
-        std::stringstream buffer;
-        auto oldbuf = move_cerr_to_other_stringstream(buffer);
-
-        e->printError();
-        std::string error(std::istreambuf_iterator<char>(buffer), {});
-
-        std::cerr.rdbuf(oldbuf);
-        ASSERT_EQ("Attempt to access elements of empty string caused an exception!\n", error);
-    }
 }
 
 int main(int argc, char** argv) {

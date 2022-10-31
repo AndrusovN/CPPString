@@ -4,42 +4,7 @@
 #include <cstring>
 #include <iostream>
 
-class BaseException {
-  public:
-    virtual void printError() const = 0;
-
-    virtual ~BaseException() {}
-};
-
-class IndexOutOfRangeException : public BaseException {
-    size_t requested_index;
-    size_t max_index;
-
-  public:
-
-    IndexOutOfRangeException(size_t requested_index, size_t max_index) 
-            : requested_index(requested_index)
-            , max_index(max_index) {}
-
-
-    void printError() const override {
-        std::cerr << "Index out of range exception! " <<
-                "Index should be in [0; " << max_index <<
-                "), but " << requested_index << " is given" << std::endl;
-    }
-};
-
-class EmptyStringCallException : public BaseException {
-    public:
-
-        void printError() const override {
-            std::cerr << "Attempt to access elements of " << 
-                "empty string caused an exception!" << std::endl;
-        }
-};
-
 const char TERMINATE_SYMBOL = '\0';
-
 
 class String {
   private:
@@ -48,10 +13,6 @@ class String {
     char* buffer;
 
     void resize_buffer(size_t new_buffer_size);
-
-    void exception_if_wrong_index(size_t index) const;
-
-    void exception_if_empty_string() const;
 
     bool matches_substring(const String& foreign, size_t begin_index) const;
 
@@ -76,15 +37,9 @@ class String {
 
     String& operator += (char c);
 
-    // Be careful - there're no checks for index correctness
-    // To use memory-safe method check String::at
     char& operator [] (size_t index);
 
     const char& operator [] (size_t index) const;
-
-    char& at(size_t index);
-
-    const char& at(size_t index) const;
 
     size_t length() const;
 
@@ -126,11 +81,8 @@ class String {
     ~String();
 };
 
-/* The general idea: if invalid argument is passed to a public method
- * it generates an exception (except for operator [])
- * If invalid argument is passed to a private method
- * it fails the program
- * */
+// The general idea: every incorrect call is UB
+
 void String::resize_buffer(size_t new_buffer_size) {
     assert(new_buffer_size > data_size);
 
@@ -141,19 +93,6 @@ void String::resize_buffer(size_t new_buffer_size) {
     delete[] buffer;
     buffer = new_buffer;
     buffer_size = new_buffer_size;
-}
-
-void String::exception_if_wrong_index(size_t index) const {
-    // since index is size_t it's always >= 0 so check only upper bound
-    if (data_size <= index) {
-        throw new IndexOutOfRangeException(index, data_size);
-    }
-}
-
-void String::exception_if_empty_string() const {
-    if (empty()) {
-        throw new EmptyStringCallException();
-    }
 }
 
 bool String::matches_substring(const String& foreign, size_t begin_index) const {
@@ -302,16 +241,6 @@ const char& String::operator [] (size_t index) const {
     return buffer[index];
 }
 
-char& String::at(size_t index) {
-    exception_if_wrong_index(index);
-    return buffer[index];
-}
-
-const char& String::at(size_t index) const {
-    exception_if_wrong_index(index);
-    return buffer[index];
-}
-
 size_t String::length() const {
     return size();
 }
@@ -338,25 +267,24 @@ void String::push_back(char c) {
 }
 
 void String::pop_back() {
-    exception_if_empty_string();
     data_size--;
     buffer[data_size] = TERMINATE_SYMBOL;
 }
 
 const char& String::front() const {
-    return (*this).at(0);
+    return buffer[0];
 }
 
 char& String::front() {
-    return (*this).at(0);
+    return buffer[0];
 }
 
 const char& String::back() const {
-    return (*this).at(size() - 1);
+    return buffer[size() - 1];
 }
 
 char& String::back() {
-    return (*this).at(size() - 1);
+    return buffer[size() - 1];
 }
 
 size_t String::find(const String& substring) const {
@@ -382,17 +310,7 @@ size_t String::rfind(const String& substring) const {
 }
 
 String String::substr(size_t from, size_t count) const { 
-    // if received negative argument casted to size_t
-    if (from + count < from) throw new IndexOutOfRangeException(size() - from, count);
-
-    String result(count, TERMINATE_SYMBOL);   
-    if (count == 0) {
-        return result; 
-    }
-   
-    exception_if_wrong_index(from);
-    exception_if_wrong_index(from + count - 1);
-    
+    String result(count, TERMINATE_SYMBOL);       
     std::copy(buffer + from, buffer + from + count, result.buffer);
     return result;
 }
