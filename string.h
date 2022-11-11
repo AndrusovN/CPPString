@@ -1,5 +1,6 @@
+#pragma once
+
 #include <algorithm>
-#include <assert.h>
 #include <cctype>
 #include <cstring>
 #include <iostream>
@@ -18,14 +19,19 @@ class String {
 
     void swap(String& other);
 
+    void set_terminate_at_end();
+
   public:
 
     String();
 
-    String(size_t size, char value=TERMINATE_SYMBOL);
+    // make this constructor explicit to prevent 
+    // strange statements like: String s = 179;
+    explicit String(size_t size, char value=TERMINATE_SYMBOL);
 
-    //to prevent calls like String('A'), which will be interpreted as String(65, '\0');
-    String(char) = delete;
+    // make this constructor explicit to prevent problems like:
+    // interpreting "a" + 'b' as [String + char] or as [String + String]
+    explicit String(char c);
 
     String(const char* source);
 
@@ -43,9 +49,6 @@ class String {
 
     size_t length() const;
 
-    // I think, it's better to remove this method 
-    // because of encapsulation violation
-    // But it is stated in the task description
     char* data();
 
     const char* data() const;
@@ -82,17 +85,19 @@ class String {
 };
 
 // The general idea: every incorrect call is UB
+// I personally think that stable apps are better and
+// I don't like leg-shooting paradigm, but if you ask...
 
 void String::resize_buffer(size_t new_buffer_size) {
     assert(new_buffer_size > data_size);
 
     char* new_buffer = new char[new_buffer_size];
-    std::fill(new_buffer, new_buffer + new_buffer_size, TERMINATE_SYMBOL);
     std::copy(buffer, buffer + data_size, new_buffer);
     
     delete[] buffer;
     buffer = new_buffer;
     buffer_size = new_buffer_size;
+    set_terminate_at_end();
 }
 
 bool String::matches_substring(const String& foreign, size_t begin_index) const {
@@ -111,6 +116,10 @@ void String::swap(String& other) {
     std::swap(data_size, other.data_size);
 }
 
+void String::set_terminate_at_end() {
+    buffer[size()] = TERMINATE_SYMBOL;
+}
+
 String::String(): String(0, TERMINATE_SYMBOL) {}
 
 String::String(size_t size, char value) 
@@ -119,8 +128,10 @@ String::String(size_t size, char value)
         , buffer(new char[buffer_size]) {
     
     std::fill(buffer, buffer + data_size, value);
-    buffer[data_size] = TERMINATE_SYMBOL;
+    set_terminate_at_end();
 }
+
+String::String(char c) : String(1, c) {}
 
 String::String(const char* source) 
         : data_size(strlen(source))
@@ -128,7 +139,7 @@ String::String(const char* source)
         , buffer(new char[buffer_size]) {
     
     std::copy(source, source + data_size, buffer);
-    buffer[data_size] = TERMINATE_SYMBOL;
+    set_terminate_at_end();
 }
 
 String::String(const String& source)
@@ -161,7 +172,7 @@ String& String::operator += (const String& other) {
 
     std::copy(other.buffer, other.buffer + other.size(), buffer + data_size);
     data_size += other.size();
-
+    set_terminate_at_end();
     return *this;
 }
 
@@ -177,7 +188,7 @@ String& String::operator += (char c) {
     }
     buffer[data_size] = c;
     ++data_size;
-    buffer[data_size] = TERMINATE_SYMBOL;
+    set_terminate_at_end();
 
     return *this;
 }
@@ -191,7 +202,7 @@ String operator + (String left, char right) {
 }
 
 String operator + (char left, const String& right) {
-    String result(1, left);
+    String result(left);
     return result += right;
 }
 
@@ -268,7 +279,7 @@ void String::push_back(char c) {
 
 void String::pop_back() {
     data_size--;
-    buffer[data_size] = TERMINATE_SYMBOL;
+    set_terminate_at_end();
 }
 
 const char& String::front() const {
@@ -299,18 +310,21 @@ size_t String::find(const String& substring) const {
 } 
 
 size_t String::rfind(const String& substring) const {
-    // now we have to use signed integer values because of i >= 0 check
-    // so we don't need first check that substring size is leq size
-    for (long long i = static_cast<long long>(size()) - static_cast<long long>(substring.size()); i >= 0; --i) {
-        if (matches_substring(substring, i)) {
-            return i;
+    // to prevent size_t overflow check loop condition with end_index, which is always >0
+    // but it's easier to work with begin_index - that's why use 2 variables
+    //
+    // if substring is empty, on the first step size() will be returned
+    for (size_t end_index = size(); end_index >= substring.size(); --end_index) {
+        size_t begin_index = end_index - substring.size();
+        if (matches_substring(substring, begin_index)) {
+            return begin_index;
         }
     }
     return size();
 }
 
 String String::substr(size_t from, size_t count) const { 
-    String result(count, TERMINATE_SYMBOL);       
+    String result(count);       
     std::copy(buffer + from, buffer + from + count, result.buffer);
     return result;
 }
@@ -320,8 +334,8 @@ bool String::empty() const {
 }
 
 void String::clear() {
-    buffer[0] = TERMINATE_SYMBOL;
     data_size = 0;
+    set_terminate_at_end();
 }
 
 void String::shrink_to_fit() {
