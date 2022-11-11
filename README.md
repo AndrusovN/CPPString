@@ -11,3 +11,7 @@ This is a learning project for MIPT lessons. This is a string class realization 
 (without exceptions and assertions to speed up)
 
 `master` is the main branch with exceptions
+
+Use `#include "string.h"` to work with the file
+
+Type `make test` to run the tests
