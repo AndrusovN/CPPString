@@ -37,15 +37,15 @@ class String {
 
     String(const String& source);
 
-    String& operator = (const String& source);
+    String& operator=(const String& source);
 
-    String& operator += (const String& other);
+    String& operator+=(const String& other);
 
-    String& operator += (char c);
+    String& operator+=(char c);
 
-    char& operator [] (size_t index);
+    char& operator[](size_t index);
 
-    const char& operator [] (size_t index) const;
+    const char& operator[](size_t index) const;
 
     size_t length() const;
 
@@ -89,8 +89,6 @@ class String {
 // I don't like leg-shooting paradigm, but if you ask...
 
 void String::resize_buffer(size_t new_buffer_size) {
-    assert(new_buffer_size > data_size);
-
     char* new_buffer = new char[new_buffer_size];
     std::copy(buffer, buffer + data_size, new_buffer);
     
@@ -101,8 +99,6 @@ void String::resize_buffer(size_t new_buffer_size) {
 }
 
 bool String::matches_substring(const String& foreign, size_t begin_index) const {
-    assert(begin_index + foreign.size() <= size());
-
     for(size_t i = 0; i < foreign.size(); ++i) {
         if (buffer[i + begin_index] != foreign[i]) return false;
     }
@@ -150,7 +146,7 @@ String::String(const String& source)
     std::copy(source.buffer, source.buffer + buffer_size, buffer);
 }
 
-String& String::operator = (const String& source) {
+String& String::operator=(const String& source) {
     if (&source == this) return *this;
 
     String temp = source;
@@ -159,7 +155,7 @@ String& String::operator = (const String& source) {
     return *this;
 }
 
-String& String::operator += (const String& other) {
+String& String::operator+=(const String& other) {
     size_t new_size = size() + other.size();
     // to have O(1) amortized complexity we have to increase 
     // at least twice data_size each reallocation
@@ -182,7 +178,7 @@ String& String::operator += (const String& other) {
  * therefore uses more memory allocation
  * So I decided to write a bit more code :)
  * */
-String& String::operator += (char c) {
+String& String::operator+=(char c) {
     if (capacity() == size()) {
         resize_buffer(buffer_size * 2);
     }
@@ -193,20 +189,22 @@ String& String::operator += (char c) {
     return *this;
 }
 
-String operator + (String left, const String& right) {
-    return left += right;
+String operator+(const String& left, const String& right) {
+    String result = left;
+    return result += right;
 }
 
-String operator + (String left, char right) {
-    return left += right;
+String operator+(const String& left, char right) {
+    String result = left;
+    return result += right;
 }
 
-String operator + (char left, const String& right) {
+String operator+(char left, const String& right) {
     String result(left);
     return result += right;
 }
 
-bool operator == (const String& left, const String& right) {
+bool operator==(const String& left, const String& right) {
     if (left.size() != right.size()) return false;
     
     for (size_t i = 0; i < left.size(); ++i) {
@@ -216,11 +214,11 @@ bool operator == (const String& left, const String& right) {
     return true;
 }
 
-bool operator != (const String& left, const String& right) {
+bool operator!=(const String& left, const String& right) {
     return !(left == right);
 }
 
-bool operator < (const String& left, const String& right) {
+bool operator<(const String& left, const String& right) {
     size_t min_size = std::min(left.size(), right.size());
 
     for(size_t i = 0; i < min_size; ++i) {
@@ -231,24 +229,23 @@ bool operator < (const String& left, const String& right) {
     return left.size() < right.size();
 }
 
-bool operator > (const String& left, const String& right) {
+bool operator>(const String& left, const String& right) {
     return right < left;
 }
 
-bool operator <= (const String& left, const String& right) {
+bool operator<=(const String& left, const String& right) {
     return !(left > right);
 }
 
-bool operator >= (const String& left, const String& right) {
+bool operator>=(const String& left, const String& right) {
     return right <= left;
 }
 
-char& String::operator [] (size_t index) {
+char& String::operator[](size_t index) {
     return buffer[index];
 }
 
-// don't ban me please... it's not copypaste imho))
-const char& String::operator [] (size_t index) const {
+const char& String::operator[](size_t index) const {
     return buffer[index];
 }
 
